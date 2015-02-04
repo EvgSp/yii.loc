@@ -9,8 +9,6 @@ $this->breadcrumbs = array(
 
 <h1>Price loading</h1>
 
-
-
 <?php
 echo "<strong>" . CHtml::label('Chose desired price lists ', false) . "</strong><br>";
 

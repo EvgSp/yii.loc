@@ -9,7 +9,7 @@ $form = $this->beginWidget('CActiveForm', array(
     'htmlOptions' => array(
         'enctype' => 'multipart/form-data',
     ),
-        ));
+));
 ?>
 
 <?php

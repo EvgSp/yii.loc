@@ -14,7 +14,7 @@ echo "<strong>" . CHtml::label('Chose desired price lists ', false) . "</strong>
 // display checkbox list of firms for processing
 echo CHtml::checkBoxList('checkbox_list_name', '', $myArray, array('checkAll' => 'Check all', 'checkAllLast' => true,));
 
-//file processing
+//widget for progressbar
 $this->widget('zii.widgets.jui.CJuiProgressBar', array(
         'value' => 0,
         'htmlOptions' => array(
@@ -23,7 +23,7 @@ $this->widget('zii.widgets.jui.CJuiProgressBar', array(
         ),
     )
 );
-
+// add javascript for processing data on client side 
 Yii::app()->clientScript->registerScript('progress_auto_update', "
     $(\"#test_button\").click(function(e){
         var arrFirms = [];

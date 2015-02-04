@@ -11,7 +11,7 @@ $this->breadcrumbs = array(
 
 <?php
 echo "<strong>" . CHtml::label('Chose desired price lists ', false) . "</strong><br>";
-
+// display checkbox list of firms for processing
 echo CHtml::checkBoxList('checkbox_list_name', '', $myArray, array('checkAll' => 'Check all', 'checkAllLast' => true,));
 
 //file processing

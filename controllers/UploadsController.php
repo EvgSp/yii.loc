@@ -118,13 +118,6 @@ class UploadsController extends Controller
                 echo $_SESSION['firm'][$i]['counter']+$i*100;
                 
             }    
-                
-		
-//		$model=$this->loadModel($id);	
-
-//		$model->fileProcessing();		
-
-//		throw new CHttpException(500,'end of process.');
 
 	}	
 

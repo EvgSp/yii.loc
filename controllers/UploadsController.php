@@ -84,10 +84,13 @@ class UploadsController extends Controller
 	public function actionFileProcesing()
 	{
             if (Yii::app()->request->isAjaxRequest) {
-
+                // if there is get request into Ajax request, save names of firms should be processed
                 if(isset($_GET['f0'])){
-                    foreach ($_SESSION['firm'] as $key=>$value){
-                        unset($_SESSION['firm'][$key]);     
+                    // delete old information
+                    if(isset($_SESSION['firm'])){
+                        foreach ($_SESSION['firm'] as $key=>$value){
+                            unset($_SESSION['firm'][$key]);     
+                        }
                     }
 
                     $i=0;

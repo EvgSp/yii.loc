@@ -99,9 +99,8 @@ class UploadsController extends Controller {
                     $_SESSION['firm'][$i]['counter'] = 101;
                 }
             }
-/* @todo find javascript functions to work with structural strings, may be json,
- * and return such string from here. Make processing this string on the client side*/
-            echo $_SESSION['firm'][$i]['counter'] + $i * 100;
+ 
+            echo '{"name":"'.$_SESSION['firm'][$i]['name'].'","counter":"'.($_SESSION['firm'][$i]['counter'] + $i * 100).'"}';
         }
     }
 

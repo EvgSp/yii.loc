@@ -38,15 +38,20 @@ Yii::app()->clientScript->registerScript('progress_auto_update', "
 		type: \"GET\",
   		url: '" . Yii::app()->createUrl('uploads/FileProcesing') . "'+listFirms,
 	  	success: function (val) {
+                    var obj = $.parseJSON(val);
+                    
+                    $(\"input[name='checkbox_list_name\[\]'][value=\"+obj.name+\"]\").prop('checked', 0);
+                    $('#checkbox_list_name_all').prop('checked', !jQuery(\"input[name='checkbox_list_name\[\]']:not(:checked)\").length);
+                    
                     for (var i = 0; i < arrFirms.length; i++) {
-                        var localVal=val-i*100;
-                        if (val-i*100 <= 100) {
+                        var localVal=obj.counter-i*100;
+                        if (obj.counter-i*100 <= 100) {
                             break;
                         }    
                     }            
                     
                     if (localVal <= 100){
-			$('#myProgress').children('div').text(localVal+'%');
+			$('#myProgress').children('div').text(localVal+'%'+' '+obj.name);
 			$('#myProgress').progressbar(\"option\", \"value\", localVal);	
                     }
                     else{

@@ -1,6 +1,6 @@
 <?php
 /* @var $this UploadsController */
-/* @var $dataProvider CActiveDataProvider */
+/* @var $myArray  array with keys and values are names of the firms*/
 
 $this->breadcrumbs = array(
     'Uploads',
@@ -11,9 +11,14 @@ $this->breadcrumbs = array(
 
 <?php
 echo "<strong>" . CHtml::label('Chose desired price lists ', false) . "</strong><br>";
+?>
+
+<?php
 // display checkbox list of firms for processing
 echo CHtml::checkBoxList('checkbox_list_name', '', $myArray, array('checkAll' => 'Check all', 'checkAllLast' => true,));
+?>
 
+<?php
 //widget for progressbar
 $this->widget('zii.widgets.jui.CJuiProgressBar', array(
         'value' => 0,
@@ -24,46 +29,15 @@ $this->widget('zii.widgets.jui.CJuiProgressBar', array(
     )
 );
 // add javascript for processing data on client side 
-Yii::app()->clientScript->registerScript('progress_auto_update', "
-    $(\"#test_button\").click(function(e){
-        var arrFirms = [];
-        var listFirms = '';
-        $(\"input[name='checkbox_list_name\[\]']:checked\").each(function(){
-            arrFirms.push($(this).val())}); 
-        for (var i = 0; i < arrFirms.length; i++) {
-            listFirms += '/f'+i+'/'+arrFirms[i];
-        }            
-	var pI=window.setInterval(function(){
-            $.ajax({
-		type: \"GET\",
-  		url: '" . Yii::app()->createUrl('uploads/FileProcesing') . "'+listFirms,
-	  	success: function (val) {
-                    var obj = $.parseJSON(val);
-                    
-                    $(\"input[name='checkbox_list_name\[\]'][value=\"+obj.name+\"]\").prop('checked', 0);
-                    $('#checkbox_list_name_all').prop('checked', !jQuery(\"input[name='checkbox_list_name\[\]']:not(:checked)\").length);
-                    
-                    for (var i = 0; i < arrFirms.length; i++) {
-                        var localVal=obj.counter-i*100;
-                        if (obj.counter-i*100 <= 100) {
-                            break;
-                        }    
-                    }            
-                    
-                    if (localVal <= 100){
-			$('#myProgress').children('div').text(localVal+'%'+' '+obj.name);
-			$('#myProgress').progressbar(\"option\", \"value\", localVal);	
-                    }
-                    else{
-                        $('#myProgress').children('div').text(100+'%');
-                        $('#myProgress').progressbar(\"option\", \"value\", 100);
-                        window.clearInterval(pI);
-                    }
-                    listFirms='';
-		}			
-            })
-	}, 1000);	
-    });", CClientScript::POS_READY
+$url=Yii::app()->createUrl('uploads/FileProcesing');
+Yii::app()->clientScript->registerScript(
+    'baseUrl',
+    'baseUrl="'.$url.'";
+    ',CClientScript::POS_HEAD
+);
+Yii::app()->clientScript->registerScriptFile(
+    Yii::app()->assetManager->publish(Yii::app()->basePath.'/views/uploads/assets/progressBar.js'), 
+    CClientScript::POS_HEAD
 );
 ?>
 </br>

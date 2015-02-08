@@ -30,26 +30,35 @@
                     success: function (val) {
                         var obj = $.parseJSON(val);
                     
-                        $("input[name='checkbox_list_name\[\]'][value="+obj.name+"]").prop('checked', 0);
-                        $('#checkbox_list_name_all').prop('checked', !jQuery("input[name='checkbox_list_name\[\]']:not(:checked)").length);
-                    
-                        for (var i = 0; i < arrFirms.length; i++) {
-                            var localVal=obj.counter-i*100;
-                            if (obj.counter-i*100 <= 100) {
-                                break;
-                            }    
-                        }            
-                    
-                        if (localVal <= 100){
-                            $('#myProgress').children('div').text(localVal+'%'+' '+obj.name);
-                            $('#myProgress').progressbar("option", "value", localVal);	
-                        }
-                        else{
-                            $('#myProgress').children('div').text(100+'%');
+                        if(obj.counter == 0){
+                            $("input[name='checkbox_list_name\[\]'][value="+obj.name+"]").prop('checked', 1);
                             $('#myProgress').progressbar("option", "value", 100);
                             window.clearInterval(pI);
+                            alert("Ошибка при обработке "+obj.name);
                         }
-                        listFirms='';
+                        else{
+                            $("input[name='checkbox_list_name\[\]'][value="+obj.name+"]").prop('checked', 0);
+                        
+                            $('#checkbox_list_name_all').prop('checked', !jQuery("input[name='checkbox_list_name\[\]']:not(:checked)").length);
+                    
+                            for (var i = 0; i < arrFirms.length; i++) {
+                                var localVal=obj.counter-i*100;
+                                if (obj.counter-i*100 <= 100) {
+                                    break;
+                                }    
+                            }            
+                    
+                            if (localVal <= 100){
+                                $('#myProgress').children('div').text(localVal+'%'+' '+obj.name);
+                                $('#myProgress').progressbar("option", "value", localVal);	
+                            }
+                            else{
+                                $('#myProgress').children('div').text(100+'%');
+                                $('#myProgress').progressbar("option", "value", 100);
+                                window.clearInterval(pI);
+                            }
+                            listFirms='';
+                        }    
                     }			
                 })
             }, 1000);	

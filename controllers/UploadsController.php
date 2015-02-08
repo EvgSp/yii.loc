@@ -1,5 +1,31 @@
 <?php
 
+/*
+ * take firm for processing
+ * find file for this firm
+ * open file
+ * read the first 100 lines of the file and save data in the DB
+ * save file handler in the $_SESSION variable
+ * calculate the procent of the file processing
+ * send procent of processing to the client
+ * 
+ * if get another ajax request
+ * read file handler from $_SESSION
+ * read next 100 lines from the file
+ * store the data in the DB
+ * save file handler in the $_SESSION
+ * calculate the procent of processing
+ * send this prosent to the client
+ * 
+ * if file processing is finished
+ * close file fandler
+ * send to the client value 101 
+ 
+ * if there was a failure
+ * send to the client value 0 
+ * 
+ */
+
 class UploadsController extends Controller {
 
     /**
@@ -125,6 +151,7 @@ class UploadsController extends Controller {
         while (isset($_GET['f' . $i])) {
             // use filter for incoming data
             $firmName = filter_var($_GET['f' . $i], FILTER_VALIDATE_REGEXP, array('options' => array('regexp' => '/\w{3,20}/i')));
+            $currentFirm=Firm::model()->find('firm_name=:fn',array(':fn'=>$firmName));
             $_SESSION['firm'][$i] = array('name' => $firmName, 'counter' => 0);
             $i++;
         }

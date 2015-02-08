@@ -56,7 +56,8 @@ class csvFileProcessBehavior extends CBehavior {
     }
 
     /**
-     * change the names of columns. The new column names is taken from second parametr 
+     * change the names of fileContent columns .
+     * The new column names is taken from the second parametr of this function i.e. columnNames 
      * and change encoding to UTF8
      * 
      * @param array input array 

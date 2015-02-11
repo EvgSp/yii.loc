@@ -152,7 +152,7 @@ class UploadsController extends Controller {
             // use filter for incoming data
             $firmName = filter_var($_GET['f' . $i], FILTER_VALIDATE_REGEXP, array('options' => array('regexp' => '/\w{3,20}/i')));
             $currentFirm=Firm::model()->find('firm_name=:fn',array(':fn'=>$firmName));
-            $_SESSION['firm'][$i] = array('name' => $firmName, 'counter' => 0);
+            $_SESSION['firm'][$i] = array('name' => $firmName, 'handler' => '', 'counter' => 0);
             $i++;
         }
     }

@@ -14,53 +14,58 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-    $(document).ready(function(){
-        $("#test_button").click(function(e){
-            var arrFirms = [];
-            var listFirms = '';
-            $("input[name='checkbox_list_name\[\]']:checked").each(function(){
-            arrFirms.push($(this).val())}); 
-            for (var i = 0; i < arrFirms.length; i++) {
-                listFirms += '/f'+i+'/'+arrFirms[i];
-            }            
-            var pI=window.setInterval(function(){
-                $.ajax({
-                    type: "GET",
-                    url: baseUrl+listFirms,
-                    success: function (val) {
-                        var obj = $.parseJSON(val);
-                    
-                        if(obj.counter == 0){
-                            $("input[name='checkbox_list_name\[\]'][value="+obj.name+"]").prop('checked', 1);
-                            $('#myProgress').progressbar("option", "value", 100);
-                            window.clearInterval(pI);
-                            alert("Ошибка при обработке "+obj.name);
-                        }
-                        else{
-                            $("input[name='checkbox_list_name\[\]'][value="+obj.name+"]").prop('checked', 0);
-                        
-                            $('#checkbox_list_name_all').prop('checked', !jQuery("input[name='checkbox_list_name\[\]']:not(:checked)").length);
-                    
-                            for (var i = 0; i < arrFirms.length; i++) {
-                                var localVal=obj.counter-i*100;
-                                if (obj.counter-i*100 <= 100) {
-                                    break;
-                                }    
-                            }            
-                    
-                            if (localVal <= 100){
-                                $('#myProgress').children('div').text(localVal+'%'+' '+obj.name);
-                                $('#myProgress').progressbar("option", "value", localVal);	
-                            }
-                            else{
-                                $('#myProgress').children('div').text(100+'%');
-                                $('#myProgress').progressbar("option", "value", 100);
-                                window.clearInterval(pI);
-                            }
-                            listFirms='';
-                        }    
-                    }			
-                })
-            }, 1000);	
+$(document).ready(function () {
+    $("#test_button").click(function (e) {
+        arrFirms = [];
+        proc=1;
+        $("input[name='checkbox_list_name\[\]']:checked").each(function () {
+            arrFirms.push($(this).val())
         });
-    });    
+        
+        for (var i = 0; i < arrFirms.length; i++) {
+            if(proc == 1)
+            start(arrFirms[i]);
+        }
+    });
+
+    function start(currFirm){
+        if(cmplt == 0){
+            ar(currFirm);
+            currFirm="";
+        }
+    }
+    
+    function ar(curFirm) {
+        $.ajax({
+            type: "GET",
+            url: baseUrl,
+            data: {f0:curFirm},
+            success: function (val) {
+                var obj = $.parseJSON(val);
+
+                if (obj.counter == 0) {
+                    $("input[name='checkbox_list_name\[\]'][value=" + obj.name + "]").prop('checked', 1);
+                    $('#myProgress').progressbar("option", "value", 100);
+                    alert("Ошибка при обработке " + obj.name);
+                    cmplt=1;
+                }
+                else {
+                    $("input[name='checkbox_list_name\[\]'][value=" + obj.name + "]").prop('checked', 0);
+                    $('#checkbox_list_name_all').prop('checked', !jQuery("input[name='checkbox_list_name\[\]']:not(:checked)").length);
+
+                    if (obj.counter <= 100) {
+                        $('#myProgress').children('div').text(obj.counter + '%' + ' ' + obj.name);
+                        $('#myProgress').progressbar("option", "value", obj.counter);
+                    }
+                    else {
+                        $('#myProgress').children('div').text(100 + '%');
+                        $('#myProgress').progressbar("option", "value", 100);
+                        cmplt=1;
+                    }
+                }
+            }
+        })
+    }
+    ;
+
+});    

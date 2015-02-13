@@ -126,6 +126,7 @@ class UploadsController extends Controller {
                 }
             }
  
+            sleep(0.5);
             echo json_encode(array(
                 'name'=>$_SESSION['firm'][$i]['name'], 
                 'counter'=>($_SESSION['firm'][$i]['counter'] + $i * 100),

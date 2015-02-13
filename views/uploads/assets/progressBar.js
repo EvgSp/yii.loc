@@ -1,71 +1,70 @@
-/* 
- * Copyright (C) 2015 evg
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+/*global $, jQuery, alert, baseUrl*/
 $(document).ready(function () {
-    $("#test_button").click(function (e) {
-        arrFirms = [];
-        proc=1;
-        $("input[name='checkbox_list_name\[\]']:checked").each(function () {
-            arrFirms.push($(this).val())
+    "use strict";
+    var start, ajaxReq, arrFirms = [], listFirms = '', flagProc = 0, i = 0;
+    $("#test_button").click(function () {
+        $("input[name='checkbox_list_name[]']:checked").each(function () {
+            arrFirms.push($(this).val());
         });
-        
-        for (var i = 0; i < arrFirms.length; i++) {
-            if(proc == 1)
-            start(arrFirms[i]);
-        }
+        start();
     });
 
-    function start(currFirm){
-        if(cmplt == 0){
-            ar(currFirm);
-            currFirm="";
+    start = function () {
+        switch (flagProc) {
+            case 0:
+                if (i < arrFirms.length) {
+                    listFirms = '/f0' + '/' + arrFirms[i];
+                }
+                ajaxReq();
+                break;
+            case 1:
+                ajaxReq();
+                break;
+            case 2:
+                if (i < arrFirms.length - 1) {
+                    i++;
+                    flagProc = 0;
+                    start();
+                }
+                break;
         }
-    }
-    
-    function ar(curFirm) {
+    };
+
+    ajaxReq = function () {
         $.ajax({
             type: "GET",
-            url: baseUrl,
-            data: {f0:curFirm},
+            url: baseUrl + listFirms,
             success: function (val) {
                 var obj = $.parseJSON(val);
 
-                if (obj.counter == 0) {
-                    $("input[name='checkbox_list_name\[\]'][value=" + obj.name + "]").prop('checked', 1);
+                listFirms = '';
+
+                if (obj.counter === 0) {
+                    $("input[name='checkbox_list_name[]'][value=" + obj.name + "]").prop('checked', 1);
                     $('#myProgress').progressbar("option", "value", 100);
                     alert("Ошибка при обработке " + obj.name);
-                    cmplt=1;
+                    flagProc = 2;
+                    start();
                 }
                 else {
-                    $("input[name='checkbox_list_name\[\]'][value=" + obj.name + "]").prop('checked', 0);
-                    $('#checkbox_list_name_all').prop('checked', !jQuery("input[name='checkbox_list_name\[\]']:not(:checked)").length);
+                    $("input[name='checkbox_list_name[]'][value=" + obj.name + "]").prop('checked', 0);
 
-                    if (obj.counter <= 100) {
-                        $('#myProgress').children('div').text(obj.counter + '%' + ' ' + obj.name);
-                        $('#myProgress').progressbar("option", "value", obj.counter);
+                    $('#checkbox_list_name_all').prop('checked', !jQuery("input[name='checkbox_list_name[]']:not(:checked)").length);
+
+                    if (obj.value <= 100) {
+                        $('#myProgress').children('div').text(obj.value + '%' + ' ' + obj.name);
+                        $('#myProgress').progressbar("option", "value", obj.value);
+                        flagProc = 1;
+                        start();
                     }
                     else {
                         $('#myProgress').children('div').text(100 + '%');
                         $('#myProgress').progressbar("option", "value", 100);
-                        cmplt=1;
+                        flagProc = 2;
+                        start();
                     }
                 }
             }
-        })
-    }
-    ;
-
-});    
+        });
+    };
+}); 

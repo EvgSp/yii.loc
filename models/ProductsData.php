@@ -128,7 +128,7 @@ class ProductsData extends CActiveRecord
      * write new data in the DB
      * @param file pointer resourse $handler
      * @param string $firmName the name of the current firm
-     * @return 
+     * @return integer number of lines been processed
      */
     public function processFile($handler, $firmName) {
        
@@ -137,7 +137,10 @@ class ProductsData extends CActiveRecord
     // one row contains the data for one product and must be recorded in one record in the database	
         foreach ($fileContent as $arrayValue) {  // take row
         // check if there is such record in the DB
-            $sql = "SELECT * FROM products_data WHERE firm = '" . $firm->firm_name . "'";
+            $this->model()->find([
+                where
+            ]);
+            $sql = "SELECT * FROM products_data WHERE firm = '" . $firmName . "'";
                 if ($arrayValue['item_id'])
                     $sql.=" AND item_id = '" . mysql_real_escape_string($arrayValue['item_id']) . "'";
                 if ($arrayValue['name'])
@@ -185,33 +188,6 @@ class ProductsData extends CActiveRecord
             }
         
     }
-
-    /**
-     * Returns the first $numberOfRows rows of CSV file encoded in UTF-8
-     * @param file pointer resourse $handler
-     * @param string $firmName name of the current firm 
-     * @return array
-     */
-    public function getCvsFileContent($handler, $firmName) {
-        $numberOfRows=100;
-        
-        $this->attachBehavior('fileProcessing', new csvFileProcessBehavior);
-    
-    // take data from DB    
-        $columnNames = PriceStructure::model()->findByAttributes([ 'firm' => $firmName ])->getColumnNames();
-        $firm = Firm::model()->find('firm_name=:fn',array(':fn'=>$firmName));
-
-    // take 100 lines ffrom file that indicates the handler
-        $fileContent = $this->csvFileToArray($handler, $firm->column_separator, $firm->text_separator, $numberOfRows);
-    // rename columns in $fileContent by corresponding names from $columnNames
-        $fileContent = $this->fillColumnNames($fileContent, $columnNames);
-    // remove unnamed columns    
-        $fileContent = $this->removeUnnamedColumns($fileContent);
-        
-        $this->detachBehaviors('fileProcessing');
-
-        return $fileContent;
-    }     
 
 	/**
 	 * Returns the static model of the specified AR class.

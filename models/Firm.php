@@ -25,8 +25,6 @@
  */
 class Firm extends CActiveRecord {
 
-    private $handler;
-
     /**
      * @return string the associated database table name
      */

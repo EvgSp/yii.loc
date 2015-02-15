@@ -16,6 +16,30 @@ class csvFileProcessBehavior extends CBehavior {
 //    public $fileName;   
 //    public $numberOfRows;
 
+
+    /**
+     * Returns the first $numberOfRows rows of CSV file encoded in UTF-8
+     * @param file pointer resourse $handler
+     * @param string $firmName name of the current firm 
+     * @return array
+     */
+    public function getCvsFileContent($handler, $firmName) {
+        $numberOfRows=100;
+    
+    // take data from DB    
+        $columnNames = PriceStructure::model()->findByAttributes([ 'firm' => $firmName ])->getColumnNames();
+        $firm = Firm::model()->find('firm_name=:fn',array(':fn'=>$firmName));
+
+    // take 100 lines ffrom file that indicates the handler
+        $fileContent = $this->csvFileToArray($handler, $firm->column_separator, $firm->text_separator, $numberOfRows);
+    // rename columns in $fileContent by corresponding names from $columnNames
+        $fileContent = $this->fillColumnNames($fileContent, $columnNames);
+    // remove unnamed columns    
+        $fileContent = $this->removeUnnamedColumns($fileContent);
+
+        return $fileContent;
+    }
+    
     /**
      * put $qty lines of the file into array
      * @param file handler
@@ -97,9 +121,7 @@ class csvFileProcessBehavior extends CBehavior {
                 }
             }
         }
-
+        
         return $fileContent;
     }
-
-
 }

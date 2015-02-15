@@ -29,9 +29,26 @@ class myFileHelper extends CFileHelper {
 
         return $handle;
     }
+    
+    /*
+     * @param file pointer resourse $handler
+     * @return integer Number of lines in the file pointed to by the pointer
+     */
+    public static function getNumberOfLines($handler){
+    // go to the start of file    
+        rewind($handler);
+        
+        $lines = 0;
+
+        while (!feof($handler)) {
+            $lines += substr_count(fread($f, 8192), "\n");
+        }
+
+        return $lines;        
+    }    
 
     /** 
-     * @param string $filePath Full or shot path of the file
+     * @param string $filePath Full or shot path of the file or jast name of file
      * @return integer Size of the file in bytes 
      */
     public static function getFileSize($filePath) {
@@ -44,21 +61,20 @@ class myFileHelper extends CFileHelper {
         else {return 0;}        
     }
 
-    /**
-     * 
-     * @param string $filePath Full or shot path of the file
-     * @return integer Timestamp of time when the file was changed suitable for date()  
+    /** 
+     * @param string $filePath Full or shot path of the file or jast name of file
+     * @return date and time the file was last modified in format "Y-m-d H:i:s" 
      */
-    public static function getFileModificationTime($filePath) {
+    public static function getFileTime($filePath) {
        // take the last component from the path. It should be name of the file  
         $fileName=  basename($filePath);
        // form full filename
         $path = self::getPathToPrices() . $fileName;
 
-        if(file_exists($path)){ return filemtime($path); }
-        else {return 0;}
-    }    
-
+        if(file_exists($path)){ return date("Y-m-d H:i:s", filemtime($path)); }
+        else {return 0;}        
+    }
+   
     /**
      * Return the list of the uploaded files
      * @return array where the keys and values are the names of files. 

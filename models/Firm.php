@@ -129,31 +129,6 @@ class Firm extends CActiveRecord {
             'criteria' => $criteria,
         ));
     }
-
-    /**
-     * Returns the first $numberOfRows rows of CSV file encoded in UTF-8
-     * 
-     * @return array
-     */
-    public function getCvsFileContent() {
-        $numberOfRows=40;
-        
-        $this->attachBehavior('fileProcessBehavior', array('class'=>'application.components.behaviors.csvFileProcessBehavior'));
-        
-        $handler = myFileHelper::getFilePointer($this->file_name);
-        // take $numberOfRows rows into array
-        $fileContent = $this->csvFileToArray($handler, $this->column_ceparator, $this->text_ceparator, $numberOfRows);
-
-        fclose($handler);  // close file
-        //change the names of columns. If the column has been identified its name is taken from the base
-        //and change encoding to UTF8
-        $columnNames = PriceStructure::model()->findByAttributes(array('firm' => $this->firm_name))->getColumnNames();
-        $fileContent = $this->fillColumnNames($fileContent, $columnNames, $this->encoding);
-        
-        $this->detachBehavior('fileProcessBehavior');
-
-        return $fileContent;
-    }
     
     /**
      * Returns the static model of the specified AR class.

@@ -1,10 +1,11 @@
 <?php
 
 /*
- * take firm for processing
+ * take firm for processing from ajax request
  * find file for this firm
  * open file
- * read the first 100 lines of the file and save data in the DB
+ * save file handler in the $_SESSION variable
+ * read the first 100 lines of the file and store the data in the DB
  * save file handler in the $_SESSION variable
  * calculate the procent of the file processing
  * send procent of processing to the client
@@ -108,57 +109,37 @@ class UploadsController extends Controller {
         if (Yii::app()->request->isAjaxRequest) {
             // if there is GET request into Ajax request, save names of firms should be processed
             if (isset($_GET['f0'])) {
-                $this->saveFirmsIntoSessionVar();
+                $this->saveFirmIntoSessionVar();
             }
 
-            $i = 0;
-            while ($_SESSION['firm'][$i]['counter'] >= 100) {
-                $i++;
-            }
-
-            $_SESSION['firm'][$i]['counter']+=3;
-
-            if ($_SESSION['firm'][$i]['counter'] >= 100) {
-                if (isset($_SESSION['firm'][$i + 1]['counter'])) {
-                    $_SESSION['firm'][$i]['counter'] = 100;
-                } else {
-                    $_SESSION['firm'][$i]['counter'] = 101;
-                }
+            //sleep(0.1);
+            //$_SESSION['firm']['counter']+=3;
+            $wereProcessed = ProductsData::processFile(
+                $handler = $_SESSION['firm']['handler'], 
+                $_SESSION['firm']['name']    
+            );
+            $_SESSION['firm']['counter'] += $wereProcessed;
+            
+        // if current file is finished
+            if ($_SESSION['firm']['counter'] == $_SESSION['firm']['lines']) {
+                $_SESSION['firm']['counter'] += 1;
+            // save in the DB parameters of the current file     
+                $model=new Uploads;
+                $model->firm = $_SESSION['firm']['name'];
+                $model->rows = $_SESSION['firm']['lines'];
+                $model->size = myFileHelper::getFileSize( $this->getFileName( $_SESSION['firm']['name'] ) );
+                $model->file_date = myFileHelper::getFileTime( $this->getFileName( $_SESSION['firm']['name'] ) );
+                $model->save();
             }
  
-            sleep(0.5);
             echo json_encode(array(
-                'name'=>$_SESSION['firm'][$i]['name'], 
-                'counter'=>($_SESSION['firm'][$i]['counter'] + $i * 100),
+                'name' => $_SESSION['firm']['name'], 
+                'counter' => $_SESSION['firm']['counter']/$_SESSION['firm']['lines'],
             ));
         }
     }
 
-    /*
-     * save information from GET into $_SESSION variable
-     * for each firm from GET fill $_SESSION['firm'][$i]['name'] by name of firm
-     * and put in $_SESSION['firm'][$i]['counter'] initial value for counter - "0"
-     */
-    protected function saveFirmsIntoSessionVar() {
-        // delete old information in $_SESSION['firm']
-        if (isset($_SESSION['firm'])) {
-            foreach ($_SESSION['firm'] as $key => $value) {
-                unset($_SESSION['firm'][$key]);
-            }
-        }
-
-        $i = 0;
-
-        while (isset($_GET['f' . $i])) {
-            // use filter for incoming data
-            $firmName = filter_var($_GET['f' . $i], FILTER_VALIDATE_REGEXP, array('options' => array('regexp' => '/\w{3,20}/i')));
-            $currentFirm=Firm::model()->find('firm_name=:fn',array(':fn'=>$firmName));
-            $_SESSION['firm'][$i] = array('name' => $firmName, 'handler' => '', 'counter' => 0);
-            $i++;
-        }
-    }
-
-    /**
+     /**
      * Returns the data model based on the primary key given in the GET variable.
      * If the data model is not found, an HTTP exception will be raised.
      * @param integer $id the ID of the model to be loaded
@@ -170,6 +151,69 @@ class UploadsController extends Controller {
         if ($model === null)
             throw new CHttpException(404, 'The requested page does not exist.');
         return $model;
+    }
+
+    /*
+     * fills $_SESSION variable information from the GET
+     * for each firm from GET fill $_SESSION['firm'][$i]['name'] by name of firm
+     * and put in $_SESSION['firm'][$i]['counter'] initial value for counter - "0"
+     */
+    protected function saveFirmIntoSessionVar() {
+    // delete old information in $_SESSION['firm']
+        clearSessionVar();
+ 
+    // assign initial values
+        $fileHahdler = '';
+        $numberOfLines = 0;
+        $counter = 0;
+        
+    // use the filter for incoming data
+        $firmName = filter_var($_GET['f0'], FILTER_VALIDATE_REGEXP, array('options' => array('regexp' => '/\w{3,20}/i')));
+
+    // if there is a record in the DB for current $firmName
+        $fileName = getFileName($firmName);
+        if( $fileName ){
+        // obtain the date/time of the file that was loaded the last 
+            $lastLoadedFileTime = Uploads::model()->find('firm=:fn',[':fn'=>$firmName])->file_date;
+        // if the current file is diffirent from the time of the last loaded file    
+            if( $lastLoadedFileTime != myFileHelper::getFileTime($fileName)) {
+                $fileHahdler = myFileHelper::getFilePointer($fileName);
+                $numberOfLines = myFileHelper::getNumberOfLines($fileHahdler);
+            }
+            else{
+                $numberOfLines = 1;
+                $counter = 1;
+            }
+        }
+        
+        $_SESSION['firm'] = [
+            'name' => $firmName, 
+            'handler' => $fileHahdler,
+            'lines' => $numberOfLines,
+            'counter' => 0,
+        ];
+    }
+    
+    /*
+     * @param string name of current firm
+     * @return string name of the price file for current firm 
+     */
+    protected function getFileName($firmName) {
+        return Firm::model()->find('firm_name=:fn',array(':fn'=>$firmName))->file_name;
+    }
+
+   /*
+     * delete all elemenrs into $_SESSION[firm]
+     */
+    protected function clearSessionVar() {
+       if (isset($_SESSION['firm'])) {
+        // if file has been opened - close it    
+            if(is_resource($_SESSION['firm']['handler']))
+                fclose($_SESSION['firm']['handler']);
+            foreach ($_SESSION['firm'] as $key => $value) {
+                unset($_SESSION['firm'][$key]);
+            }
+        }        
     }
 
     /**

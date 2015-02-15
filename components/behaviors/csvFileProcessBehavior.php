@@ -18,8 +18,6 @@ class csvFileProcessBehavior extends CBehavior {
 
     /**
      * put $qty lines of the file into array
-     * handler of the file is global variable 
-     * therefore, processing begins with the string pointed to by the handler 
      * @param file handler
      * @return array
      */

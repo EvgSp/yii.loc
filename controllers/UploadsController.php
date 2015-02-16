@@ -114,11 +114,11 @@ class UploadsController extends Controller {
 
             //sleep(0.1);
             //$_SESSION['firm']['counter']+=3;
-            $wereProcessed = ProductsData::processFile(
+            $linesProcessed = $this->processFile(
                 $handler = $_SESSION['firm']['handler'], 
                 $_SESSION['firm']['name']    
             );
-            $_SESSION['firm']['counter'] += $wereProcessed;
+            $_SESSION['firm']['counter'] += $linesProcessed;
             
         // if current file is finished
             if ($_SESSION['firm']['counter'] == $_SESSION['firm']['lines']) {
@@ -216,6 +216,68 @@ class UploadsController extends Controller {
         }        
     }
 
+    /**
+     * read data from the file
+     * check out if the DB contains the current data
+     * write new data in the DB
+     * @param file pointer resourse $handler
+     * @param string $firmName the name of the current firm
+     * @return integer number of lines been processed
+     */
+    protected function processFile($handler, $firmName) {
+        
+        $this->attachBehavior('fileProcess', 'csvFileProcessBehavior' );
+        $fileContent = $this->getCvsFileContent($handler, $firmName);
+        $this->detachBehavior('fileProcess');
+        
+    // one row contains the data for one product and must be recorded in one record in the database	
+        foreach ($fileContent as $row) {  // take row
+            $model = new ProductsData;
+        // check if the record exists in the DB. Loking for strict compliance
+            if( $record = $model->isProductExist($firmName, $row['item_id'], $row['name'] )) {
+            // if the record exists, update it
+                
+            }
+
+            // if the record does not exist, make new record	
+                if (!$dbCommand->queryRow()) {
+                    $insertPart = '';
+                    $valuePart = '';
+                    // prepare data for the query
+
+                    foreach ($arrayValue as $key => $value) {
+                        if ($key == 'name') {   // name mast be more then 4 symbols
+                            if (strlen($value) < 4)
+                                continue 2;
+                        }
+
+                        if ($key == 'price') {   // price mast be greate then 0
+                            settype($value, "float");
+                            if ($value <= 0)
+                                continue 2;
+                        }
+
+                        $insertPart.=", " . $key;
+                        $valuePart.=", '" . mysql_real_escape_string($value) . "'";
+                    }
+
+                    if (!strpos($insertPart, 'name'))  //if there is not 'name' column in the file
+                        continue;
+                    if (!strpos($insertPart, 'price'))  //if there is not 'price' column in the file
+                        continue;
+
+                    $insertPart = substr($insertPart, 2);  // remove thirst comma and whitespace			
+                    $valuePart = substr($valuePart, 2);
+
+                    // make new query string	
+                    $dbCommand->text = "INSERT INTO products_data (firm, " . $insertPart . ") VALUES ('" . $this->firm_name . "', " . $valuePart . ')';
+                    // write data to the DB	
+                    $dbCommand->execute();
+                }
+            }
+        
+    }
+    
     /**
      * Performs the AJAX validation.
      * @param Uploads $model the model to be validated

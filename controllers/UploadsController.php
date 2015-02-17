@@ -234,9 +234,36 @@ class UploadsController extends Controller {
         foreach ($fileContent as $row) {  // take row
             $model = new ProductsData;
         // check if the record exists in the DB. Loking for strict compliance
-            if( $record = $model->isProductExist($firmName, $row['item_id'], $row['name'] )) {
+            $oldRecord = $model->isProductExist($firmName, $row );
+            if( $oldRecord ) {
             // if the record exists, update it
+                if( $row['description']) {
+                    $oldRecord->description = $row['description'];
+                }        
                 
+                if( $row['availability']) {
+                    $oldRecord->availability = $row['availability'];
+                }        
+
+                if( $row['bonus']) {
+                    $oldRecord->bonus = $row['bonus'];
+                }        
+
+                if( $row['shipping_cost']) {
+                    $oldRecord->shipping_cost = $row['shipping_cost'];
+                }        
+
+                if( $row['product_page']) {
+                    $oldRecord->product_page = $row['product_page'];
+                }        
+
+                if( $row['sourse_page']) {
+                    $oldRecord->sourse_page = $row['sourse_page'];
+                }        
+                
+                $oldRecord->price = $row['price'];
+                
+                $oldRecord->save();
             }
 
             // if the record does not exist, make new record	

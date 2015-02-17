@@ -122,14 +122,19 @@ class ProductsData extends CActiveRecord
 		));
 	}
         
-    public function isProductExist( $firmName, $itemId = '', $name = '' ){
+    public function isProductExist( $firmName, $row ){
+        $itemId = '';
+        $name = '';
+        
         $criteria = new CDbCriteria();
         $criteria->condition = 'firm=:firm';
-        if($itemId){
+        if( isset( $row['item_id'] )) {
             $criteria->addCondition('item_id=:itemId');
+            $itemId = $row['item_id'];
         }
-        if($name){
+        if( isset( $row['name'] )) {
             $criteria->addCondition('name=:name');
+            $name = $row['name'];
         }
         $criteria->params=[':firm'=>$firmName, ':itemId'=>$itemId, ':name'=>$name ];
         

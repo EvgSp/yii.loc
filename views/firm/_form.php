@@ -50,15 +50,15 @@
 	</div>
 
 	<div class="row">
-		<?php echo $form->labelEx($model,'column_ceparator'); ?>
-		<?php echo $form->textField($model,'column_ceparator',array('size'=>1,'maxlength'=>1)); ?>
-		<?php echo $form->error($model,'column_ceparator'); ?>
+		<?php echo $form->labelEx($model,'column_separator'); ?>
+		<?php echo $form->textField($model,'column_separator',array('size'=>1,'maxlength'=>1)); ?>
+		<?php echo $form->error($model,'column_separator'); ?>
 	</div>
 
 	<div class="row">
-		<?php echo $form->labelEx($model,'text_ceparator'); ?>
-		<?php echo $form->textField($model,'text_ceparator',array('size'=>1,'maxlength'=>1)); ?>
-		<?php echo $form->error($model,'text_ceparator'); ?>
+		<?php echo $form->labelEx($model,'text_separator'); ?>
+		<?php echo $form->textField($model,'text_separator',array('size'=>1,'maxlength'=>1)); ?>
+		<?php echo $form->error($model,'text_separator'); ?>
 	</div>
 
 	<div class="row">

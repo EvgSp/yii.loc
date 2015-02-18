@@ -160,7 +160,7 @@ class UploadsController extends Controller {
      */
     protected function saveFirmIntoSessionVar() {
     // delete old information in $_SESSION['firm']
-        clearSessionVar();
+        $this->clearSessionVar();
  
     // assign initial values
         $fileHahdler = '';
@@ -171,7 +171,7 @@ class UploadsController extends Controller {
         $firmName = filter_var($_GET['f0'], FILTER_VALIDATE_REGEXP, array('options' => array('regexp' => '/\w{3,20}/i')));
 
     // if there is a record in the DB for current $firmName
-        $fileName = getFileName($firmName);
+        $fileName = $this->getFileName($firmName);
         if( $fileName ){
         // obtain the date/time of the file that was loaded the last 
             $lastLoadedFileTime = Uploads::model()->find('firm=:fn',[':fn'=>$firmName])->file_date;
@@ -226,84 +226,47 @@ class UploadsController extends Controller {
      */
     protected function processFile($handler, $firmName) {
         
-        $this->attachBehavior('fileProcess', 'csvFileProcessBehavior' );
-        $fileContent = $this->getCvsFileContent($handler, $firmName);
+        $this->attachBehavior('fileProcess', [ 
+            'class' => 'application.components.behaviors.csvFileProcessBehavior',
+            'handler' => $handler,
+            'numberOfRows' => 100, 
+        ]);
+        $fileContent = $this->getCvsFileContent($firmName);
         $this->detachBehavior('fileProcess');
         
     // one row contains the data for one product and must be recorded in one record in the database	
+        $linesProcessed = 0;
         foreach ($fileContent as $row) {  // take row
-            $model = new ProductsData;
-        // check if the record exists in the DB. Loking for strict compliance
-            $oldRecord = $model->isProductExist($firmName, $row );
-            if( $oldRecord ) {
-            // if the record exists, update it
-                if( $row['description']) {
-                    $oldRecord->description = $row['description'];
-                }        
-                
-                if( $row['availability']) {
-                    $oldRecord->availability = $row['availability'];
-                }        
-
-                if( $row['bonus']) {
-                    $oldRecord->bonus = $row['bonus'];
-                }        
-
-                if( $row['shipping_cost']) {
-                    $oldRecord->shipping_cost = $row['shipping_cost'];
-                }        
-
-                if( $row['product_page']) {
-                    $oldRecord->product_page = $row['product_page'];
-                }        
-
-                if( $row['sourse_page']) {
-                    $oldRecord->sourse_page = $row['sourse_page'];
-                }        
-                
-                $oldRecord->price = $row['price'];
-                
-                $oldRecord->save();
-            }
-
-            // if the record does not exist, make new record	
-                if (!$dbCommand->queryRow()) {
-                    $insertPart = '';
-                    $valuePart = '';
-                    // prepare data for the query
-
-                    foreach ($arrayValue as $key => $value) {
-                        if ($key == 'name') {   // name mast be more then 4 symbols
-                            if (strlen($value) < 4)
-                                continue 2;
-                        }
-
-                        if ($key == 'price') {   // price mast be greate then 0
-                            settype($value, "float");
-                            if ($value <= 0)
-                                continue 2;
-                        }
-
-                        $insertPart.=", " . $key;
-                        $valuePart.=", '" . mysql_real_escape_string($value) . "'";
-                    }
-
-                    if (!strpos($insertPart, 'name'))  //if there is not 'name' column in the file
-                        continue;
-                    if (!strpos($insertPart, 'price'))  //if there is not 'price' column in the file
-                        continue;
-
-                    $insertPart = substr($insertPart, 2);  // remove thirst comma and whitespace			
-                    $valuePart = substr($valuePart, 2);
-
-                    // make new query string	
-                    $dbCommand->text = "INSERT INTO products_data (firm, " . $insertPart . ") VALUES ('" . $this->firm_name . "', " . $valuePart . ')';
-                    // write data to the DB	
-                    $dbCommand->execute();
-                }
-            }
+        // get the record with current ID and name from the DB. If it dos't exist get new record
+            $record = $this->getProduct($firmName, $row['item_id'], $row['name'] );
+        // assign values    
+            $record->attributes = $row;
+            $record->save();
+            $linesProcessed += 1;
+        }
         
+        return $linesProcessed;
     }
+
+    protected function getProduct( $firmName, $itemId = '', $name = '' ) {
+        
+        $criteria = new CDbCriteria();
+        $criteria->condition = 'firm=:firm';
+        if( isset( $itemId )) {
+            $criteria->addCondition('item_id=:itemId');
+        }
+        if( isset( $name )) {
+            $criteria->addCondition('name=:name');
+        }
+        $criteria->params=[':firm'=>$firmName, ':itemId'=>$itemId, ':name'=>$name ];
+    // if product with sach ID and name dos't exist    
+        if( !$product = ProductsData::model()->find($criteria) ) {
+        // make new item    
+            $product = new ProductsData;
+        }
+        return $product;
+    }    
+        
     
     /**
      * Performs the AJAX validation.

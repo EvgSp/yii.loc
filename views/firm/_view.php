@@ -29,12 +29,12 @@
 	<?php echo CHtml::encode($data->file_type); ?>
 	<br />
 
-	<b class="span-4"><?php echo CHtml::encode($data->getAttributeLabel('column_ceparator')); ?>:</b>
-	<?php echo CHtml::encode($data->column_ceparator); ?>
+	<b class="span-4"><?php echo CHtml::encode($data->getAttributeLabel('column_separator')); ?>:</b>
+	<?php echo CHtml::encode($data->column_separator); ?>
 	<br />
 
-	<b class="span-4"><?php echo CHtml::encode($data->getAttributeLabel('text_ceparator')); ?>:</b>
-	<?php echo CHtml::encode($data->text_ceparator); ?>
+	<b class="span-4"><?php echo CHtml::encode($data->getAttributeLabel('text_separator')); ?>:</b>
+	<?php echo CHtml::encode($data->text_separator); ?>
 	<br />
 
 	<?php /*

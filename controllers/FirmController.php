@@ -53,7 +53,14 @@ class FirmController extends Controller
 	{
 		$model=$this->loadModel($id);
 		
-		$fileContent=$model->getCvsFileContent();
+                $handler = myFileHelper::getFilePointer($model->file_name);                
+                $model->attachBehavior('fileProcess', [ 
+                    'class' => 'application.components.behaviors.csvFileProcessBehavior',
+                    'handler' => $handler,
+                    'numberOfRows' => 40,
+                ]);
+		$fileContent=$model->getCvsFileContent($model);
+                $model->detachBehavior('fileProcess');
 		
 		if($fileContent) 
 			$dataProvider=new CArrayDataProvider($fileContent, array('pagination'=>false, 'keyField' => false,));
@@ -110,8 +117,15 @@ class FirmController extends Controller
 			}	
 
 		}
-
-		$fileContent=$model->getCvsFileContent();		// get the file contents
+		
+                $handler = myFileHelper::getFilePointer($model->file_name);                
+                $model->attachBehavior('fileProcess', [ 
+                    'class' => 'application.components.behaviors.csvFileProcessBehavior',
+                    'handler' => $handler,
+                    'numberOfRows' => 40,
+                ]);
+                $fileContent=$model->getCvsFileContent($model);		// get the file contents
+                $model->detachBehavior('fileProcess');
 		
 		if($fileContent) 
 			$dataProvider=new CArrayDataProvider($fileContent, array('pagination'=>false, 'keyField' => false, ));

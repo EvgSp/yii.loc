@@ -10,8 +10,8 @@
  * @property string $rating
  * @property string $file_name
  * @property string $file_type
- * @property string $column_ceparator
- * @property string $text_ceparator
+ * @property string $column_separator
+ * @property string $text_separator
  * @property string $encoding
  * @property string $currency
  * @property string $exchange_rate
@@ -47,7 +47,7 @@ class Firm extends CActiveRecord {
             array('firm_name', 'length', 'max' => 50),
             array('file_name', 'length', 'max' => 50),
             array('file_type', 'length', 'max' => 10),
-            array('column_ceparator, text_ceparator', 'length', 'max' => 1),
+            array('column_separator, text_separator', 'length', 'max' => 1),
             array('encoding', 'length', 'max' => 20),
             array('currency', 'length', 'max' => 40),
             array('currency', 'in', 'range' => Yii::app()->params['currency']),
@@ -83,8 +83,8 @@ class Firm extends CActiveRecord {
             'rating' => 'Rating',
             'file_name' => 'File Name',
             'file_type' => 'File Type',
-            'column_ceparator' => 'Column Ceparator',
-            'text_ceparator' => 'Text Ceparator',
+            'column_separator' => 'Column Separator',
+            'text_separator' => 'Text Separator',
             'encoding' => 'Encoding',
             'currency' => 'Currency',
             'exchange_rate' => 'Exchange Rate',
@@ -115,8 +115,8 @@ class Firm extends CActiveRecord {
         $criteria->compare('rating', $this->rating, true);
         $criteria->compare('file_name', $this->file_name, true);
         $criteria->compare('file_type', $this->file_type, true);
-//		$criteria->compare('column_ceparator',$this->column_ceparator,true);
-//		$criteria->compare('text_ceparator',$this->text_ceparator,true);
+//		$criteria->compare('column_separator',$this->column_separator,true);
+//		$criteria->compare('text_separator',$this->text_separator,true);
         $criteria->compare('encoding', $this->encoding, true);
         $criteria->compare('currency', $this->currency, true);
         $criteria->compare('exchange_rate', $this->exchange_rate, true);

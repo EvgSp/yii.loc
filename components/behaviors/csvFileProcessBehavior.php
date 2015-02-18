@@ -12,28 +12,33 @@
  * @author evg
  */
 class csvFileProcessBehavior extends CBehavior {
-//    public $firmName;
-//    public $fileName;   
-//    public $numberOfRows;
+    public $handler;
+    public $numberOfRows = 100;
 
 
     /**
      * Returns the first $numberOfRows rows of CSV file encoded in UTF-8
-     * @param file pointer resourse $handler
-     * @param string $firmName name of the current firm 
+     * @param either string or AR instance $firmName name of the current firm 
+     * or instance AR class Firm
      * @return array
      */
-    public function getCvsFileContent($handler, $firmName) {
-        $numberOfRows=100;
+    public function getCvsFileContent($firmName) {
+    // check what passed in the second paramerer
+        if( \is_string( $firmName ) ) {
+            $firm = Firm::model()->find('firm_name=:fn',array(':fn'=>$firmName));
+        }
+        else {
+            $firm = $firmName;
+        }
     
     // take data from DB    
-        $columnNames = PriceStructure::model()->findByAttributes([ 'firm' => $firmName ])->getColumnNames();
-        $firm = Firm::model()->find('firm_name=:fn',array(':fn'=>$firmName));
+        $columnNames = PriceStructure::model()->findByAttributes([ 'firm' => $firm->firm_name ])->getColumnNames();
 
-    // take 100 lines ffrom file that indicates the handler
-        $fileContent = $this->csvFileToArray($handler, $firm->column_separator, $firm->text_separator, $numberOfRows);
+    // take 100 lines from file that indicates the handler
+        $aaa = $firm->column_separator;
+        $fileContent = $this->csvFileToArray($firm->column_separator, $firm->text_separator, $this->numberOfRows);
     // rename columns in $fileContent by corresponding names from $columnNames
-        $fileContent = $this->fillColumnNames($fileContent, $columnNames);
+        $fileContent = $this->fillColumnNames($fileContent, $columnNames, $firm->encoding);
     // remove unnamed columns    
         $fileContent = $this->removeUnnamedColumns($fileContent);
 
@@ -45,8 +50,8 @@ class csvFileProcessBehavior extends CBehavior {
      * @param file handler
      * @return array
      */
-    protected function csvFileToArray($handler, $columnSeparator, $textSeparator, $qty = 20) {
-        if (!$handler) {  //if the handler is empty
+    protected function csvFileToArray($columnSeparator, $textSeparator, $qty = 20) {
+        if (!$this->handler) {  //if the handler is empty
             throw new CHttpException(500, 'File not found.');
         }
 
@@ -54,25 +59,27 @@ class csvFileProcessBehavior extends CBehavior {
         if ($columnSeparator) {
             if ($textSeparator) {
                 for ($i = 0; $i < $qty; $i++) {
-                    if (($row = fgetcsv($handler, 1000, $columnSeparator, $textSeparator)) !== FALSE)
+                    if (($row = fgetcsv($this->handler, 1000, $columnSeparator, $textSeparator)) !== FALSE)
                         $fileContent[] = $row;  // add line as new row in $fileContent array
                 }
             }
             else {
                 for ($i = 0; $i < $qty; $i++) {
-                    if (($row = fgetcsv($handler, 1000, $columnSeparator)) !== FALSE)
+                    if (($row = fgetcsv($this->handler, 1000, $columnSeparator)) !== FALSE)
                         $fileContent[] = $row;  // add line as new row in $fileContent array
                 }
             }
         }
         else {
             for ($i = 0; $i < $qty; $i++) {
-                if (($row = fgets($handler, 1000)) !== FALSE)
+                if (($row = fgets($this->handler, 1000)) !== FALSE)
                     $fileContent[][0] = $row;  //add line as new row in $fileContent array
             }
         }
 
-        $this->owner->handler = $handler;  //save handler in global variable
+        if(isset($this->owner->handler)) {
+            $this->owner->handler = $this->handler;  //save handler in global variable
+        }
 
         return $fileContent;
     }

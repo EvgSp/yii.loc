@@ -12,7 +12,7 @@
  * @author evg
  */
 class csvFileProcessBehavior extends CBehavior {
-    public $handler;
+    public $handler = '';
     public $numberOfRows = 100;
 
 
@@ -35,7 +35,6 @@ class csvFileProcessBehavior extends CBehavior {
         $columnNames = PriceStructure::model()->findByAttributes([ 'firm' => $firm->firm_name ])->getColumnNames();
 
     // take 100 lines from file that indicates the handler
-        $aaa = $firm->column_separator;
         $fileContent = $this->csvFileToArray($firm->column_separator, $firm->text_separator, $this->numberOfRows);
     // rename columns in $fileContent by corresponding names from $columnNames
         $fileContent = $this->fillColumnNames($fileContent, $columnNames, $firm->encoding);
@@ -59,14 +58,18 @@ class csvFileProcessBehavior extends CBehavior {
         if ($columnSeparator) {
             if ($textSeparator) {
                 for ($i = 0; $i < $qty; $i++) {
-                    if (($row = fgetcsv($this->handler, 1000, $columnSeparator, $textSeparator)) !== FALSE)
+                    $row = fgetcsv($this->handler, 1000, $columnSeparator, $textSeparator );
+                    if ( $row ) {
                         $fileContent[] = $row;  // add line as new row in $fileContent array
+                    }
                 }
             }
             else {
                 for ($i = 0; $i < $qty; $i++) {
-                    if (($row = fgetcsv($this->handler, 1000, $columnSeparator)) !== FALSE)
+                    $row = fgetcsv($this->handler, 1000, $columnSeparator);
+                    if ( $row ) {
                         $fileContent[] = $row;  // add line as new row in $fileContent array
+                    }
                 }
             }
         }
@@ -131,4 +134,11 @@ class csvFileProcessBehavior extends CBehavior {
         
         return $fileContent;
     }
+
+
+    protected function addLine( $row ) {
+        if ( $row ) {
+            return $row;  // add line as new row in $fileContent array
+        }  
+    }    
 }

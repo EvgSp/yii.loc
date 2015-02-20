@@ -114,11 +114,18 @@ class UploadsController extends Controller {
 
             //sleep(0.1);
             //$_SESSION['firm']['counter']+=3;
-            $linesProcessed = $this->processFile(
-                $handler = $_SESSION['firm']['handler'], 
-                $_SESSION['firm']['name']    
-            );
-            $_SESSION['firm']['counter'] += $linesProcessed;
+        // if we have the pointer for the file
+            if ( $_SESSION['firm']['handler'] && !feof( $_SESSION['firm']['handler'] )) { 
+            
+                $linesProcessed = $this->processFile(
+                    $_SESSION['firm']['handler'], 
+                    $_SESSION['firm']['name']    
+                );
+                $_SESSION['firm']['counter'] += $linesProcessed;
+            }
+            else {
+                $_SESSION['firm']['counter'] = $_SESSION['firm']['lines'];
+            }
             
         // if current file is finished
             if ($_SESSION['firm']['counter'] == $_SESSION['firm']['lines']) {
@@ -208,8 +215,9 @@ class UploadsController extends Controller {
     protected function clearSessionVar() {
        if (isset($_SESSION['firm'])) {
         // if file has been opened - close it    
-            if(is_resource($_SESSION['firm']['handler']))
+            if( isset($_SESSION['firm']['handler'] ) && is_resource( $_SESSION['firm']['handler']) ) {
                 fclose($_SESSION['firm']['handler']);
+            }
             foreach ($_SESSION['firm'] as $key => $value) {
                 unset($_SESSION['firm'][$key]);
             }

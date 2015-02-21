@@ -22,12 +22,11 @@ class myFileHelper extends CFileHelper {
     public static function getFilePointer($fileName) {
         $path = self::getPathToPrices() . $fileName;
 
-        if (!file_exists($path))
-            return NULL; // file dos't exist		
-        if (!($handle = fopen($path, "r")))
-            return NULL;   // file open error	
+        if (file_exists($path) && ($handle = fopen($path, "r"))) {
+            return $handle;   // file open error
+        }    
 
-        return $handle;
+        return NULL;
     }
     
     /*

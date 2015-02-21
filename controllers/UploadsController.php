@@ -65,31 +65,6 @@ class UploadsController extends Controller {
      * Check which firms are chosen and uploads price lists selected companies  
      */
     public function actionIndex() {
-        if (isset($_POST['checkbox_list_name'])) {        // if there is data from form
-            // for each selected firm
-            foreach ($_POST['checkbox_list_name'] as $firmName) {
-
-                /* @todo uncomment this part after test finished
-                  // make new record in table 'Uploads'
-                  $uploadModel=new Uploads();
-                  // get record of current firm from DB
-                  $currentFirm=Firm::model()->find('firm_name=:fn',array(':fn'=>$firmName));
-                  // if recording in the base is successful
-
-                  if($uploadModel->loadGoodsInBase($currentFirm)>0){
-                  $fileName=$currentFirm->file_name;
-
-                  $uploadModel->firm = $firmName;
-                  $uploadModel->rows = 100; //loadGoodsInBase($firmName);
-                  $uploadModel->size = myFileHelper::getFileSize($fileName);
-                  $uploadModel->file_date = date('Y-m-d H:i:s', myFileHelper::getFileModificationTime($fileName));
-                  }
-                  $uploadModel->save();
-                 */
-
-                $_SESSION['counter'] = array(0, time() + 60);
-            }
-        }
 
         $firmModels = Firm::model()->findAll('activity=1');
         foreach ($firmModels as $firmModel) {
@@ -108,13 +83,10 @@ class UploadsController extends Controller {
     public function actionFileProcesing() {
         if (Yii::app()->request->isAjaxRequest) {
             // if there is GET request into Ajax request, save names of firms should be processed
-            if (isset($_GET['f0'])) {
-                $this->saveFirmIntoSessionVar();
-            }
+            if (isset($_GET['f0'])) 
+                    $this->saveFirmIntoSessionVar();
 
-            //sleep(0.1);
-            //$_SESSION['firm']['counter']+=3;
-        // if we have the pointer for the file
+        // if we have got the pointer for the file
             if ( $_SESSION['firm']['handler'] && !feof( $_SESSION['firm']['handler'] )) { 
             
                 $linesProcessed = $this->processFile(
@@ -136,12 +108,12 @@ class UploadsController extends Controller {
                 $model->rows = $_SESSION['firm']['lines'];
                 $model->size = myFileHelper::getFileSize( $this->getFileName( $_SESSION['firm']['name'] ) );
                 $model->file_date = myFileHelper::getFileTime( $this->getFileName( $_SESSION['firm']['name'] ) );
-                $model->save();
+            //    $model->save();
             }
  
             echo json_encode(array(
                 'name' => $_SESSION['firm']['name'], 
-                'counter' => $_SESSION['firm']['counter']/$_SESSION['firm']['lines'],
+                'counter' => $_SESSION['firm']['counter']*100/$_SESSION['firm']['lines'],
             ));
         }
     }
@@ -180,16 +152,15 @@ class UploadsController extends Controller {
     // if there is a record in the DB for current $firmName
         $fileName = $this->getFileName($firmName);
         if( $fileName ){
-        // obtain the date/time of the file that was loaded the last 
-            $lastLoadedFileTime = Uploads::model()->find('firm=:fn',[':fn'=>$firmName])->file_date;
-        // if the current file is diffirent from the time of the last loaded file    
-            if( $lastLoadedFileTime != myFileHelper::getFileTime($fileName)) {
-                $fileHahdler = myFileHelper::getFilePointer($fileName);
-                $numberOfLines = myFileHelper::getNumberOfLines($fileHahdler);
-            }
-            else{
+        // check if the current file has been loaded into DB
+            $currentFileTime = \myFileHelper::getFileTime($fileName);
+            $firmUploaded = Uploads::model()->find('firm=:fn AND file_date=:fd',[':fn'=>$firmName, ':fd'=>$currentFileTime]);
+            if ( $firmUploaded ) {
                 $numberOfLines = 1;
                 $counter = 1;
+            } else {
+                $fileHahdler = \myFileHelper::getFilePointer($fileName);
+                $numberOfLines = \myFileHelper::getNumberOfLines($fileHahdler);
             }
         }
         

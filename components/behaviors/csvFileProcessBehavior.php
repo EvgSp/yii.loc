@@ -134,11 +134,5 @@ class csvFileProcessBehavior extends CBehavior {
         
         return $fileContent;
     }
-
-
-    protected function addLine( $row ) {
-        if ( $row ) {
-            return $row;  // add line as new row in $fileContent array
-        }  
-    }    
+    
 }

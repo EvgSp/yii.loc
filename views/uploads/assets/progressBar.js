@@ -2,7 +2,11 @@
 $(document).ready(function () {
     "use strict";
     var start, ajaxReq, arrFirms = [], listFirms = '', flagProc = 0, i = 0;
+    
     $("#test_button").click(function () {
+        arrFirms = [];
+        flagProc = 0; 
+        i = 0;
         $("input[name='checkbox_list_name[]']:checked").each(function () {
             arrFirms.push($(this).val());
         });
@@ -16,6 +20,7 @@ $(document).ready(function () {
                     listFirms = '/f0' + '/' + arrFirms[i];
                 }
                 ajaxReq();
+                listFirms = '';
                 break;
             case 1:
                 if (i < arrFirms.length - 1) {
@@ -38,8 +43,17 @@ $(document).ready(function () {
 
                 if (obj.counter === 0) {
                     $("input[name='checkbox_list_name[]'][value=" + obj.name + "]").prop('checked', 1);
+                    $('#myProgress').children('div').text(100 + '%');
                     $('#myProgress').progressbar("option", "value", 100);
                     alert("Ошибка при обработке " + obj.name);
+                    flagProc = 1;
+                    start();
+                }
+                else if (obj.counter === 200) {
+                    $("input[name='checkbox_list_name[]'][value=" + obj.name + "]").prop('checked', 1);
+                    $('#myProgress').children('div').text(100 + '%');
+                    $('#myProgress').progressbar("option", "value", 100);
+                    alert("Файл " + obj.name + " уже загружался!!!");
                     flagProc = 1;
                     start();
                 }

@@ -39,7 +39,7 @@ class ProductsData extends CActiveRecord
 		// NOTE: you should only define rules for those attributes that
 		// will receive user inputs.
 		return array(
-			array('firm, change_date, name, price', 'required'),
+			array('firm, name, price', 'required'),
 			array('firm, availability', 'length', 'max'=>50),
 			array('item_id', 'length', 'max'=>25),
 			array('name', 'length', 'max'=>150),

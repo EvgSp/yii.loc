@@ -1,32 +1,5 @@
 <?php
 
-/*
- * take firm for processing from ajax request
- * find file for this firm
- * open file
- * save file handler in the $_SESSION variable
- * read the first 100 lines of the file and store the data in the DB
- * save file handler in the $_SESSION variable
- * calculate the procent of the file processing
- * send procent of processing to the client
- * 
- * if get another ajax request
- * read file handler from $_SESSION
- * read next 100 lines from the file
- * store the data in the DB
- * save file handler in the $_SESSION
- * calculate the procent of processing
- * send this prosent to the client
- * 
- * if file processing is finished
- * close file fandler
- * send to the client value 101 
- 
- * if there was a failure
- * send to the client value 0 
- * 
- */
-
 class UploadsController extends Controller {
 
     /**
@@ -83,8 +56,9 @@ class UploadsController extends Controller {
     public function actionFileProcesing() {
         if (Yii::app()->request->isAjaxRequest) {
             // if there is GET request into Ajax request, save names of firms should be processed
-            if (isset($_GET['f0'])) 
-                    $this->saveFirmIntoSessionVar();
+            if (isset($_GET['f0'])) {
+                $this->saveFirmIntoSessionVar();
+            }    
 
         // if we have got the pointer for the file
             if ( $_SESSION['firm']['handler'] && !feof( $_SESSION['firm']['handler'] )) { 
@@ -108,7 +82,7 @@ class UploadsController extends Controller {
                 $model->rows = $_SESSION['firm']['lines'];
                 $model->size = myFileHelper::getFileSize( $this->getFileName( $_SESSION['firm']['name'] ) );
                 $model->file_date = myFileHelper::getFileTime( $this->getFileName( $_SESSION['firm']['name'] ) );
-            //    $model->save();
+                $model->save();
             }
  
             echo json_encode(array(
@@ -127,8 +101,9 @@ class UploadsController extends Controller {
      */
     public function loadModel($id) {
         $model = Uploads::model()->findByPk($id);
-        if ($model === null)
+        if ($model === null) {
             throw new CHttpException(404, 'The requested page does not exist.');
+        }    
         return $model;
     }
 
@@ -147,24 +122,24 @@ class UploadsController extends Controller {
         $counter = 0;
         
     // use the filter for incoming data
-        $firmName = filter_var($_GET['f0'], FILTER_VALIDATE_REGEXP, array('options' => array('regexp' => '/\w{3,20}/i')));
+        $firmName = filter_var( $_GET['f0'], FILTER_VALIDATE_REGEXP, [ 'options' => [ 'regexp' => '/\w{3,20}/i' ] ] );
 
     // if there is a record in the DB for current $firmName
-        $fileName = $this->getFileName($firmName);
+        $fileName = $this->getFileName( $firmName );
         if( $fileName ){
         // check if the current file has been loaded into DB
-            $currentFileTime = \myFileHelper::getFileTime($fileName);
+            $currentFileTime = \myFileHelper::getFileTime( $fileName );
             $firmUploaded = Uploads::model()->find('firm=:fn AND file_date=:fd',[':fn'=>$firmName, ':fd'=>$currentFileTime]);
             if ( $firmUploaded ) {
                 $numberOfLines = 1;
                 $counter = 1;
             } else {
-                $fileHahdler = \myFileHelper::getFilePointer($fileName);
-                $numberOfLines = \myFileHelper::getNumberOfLines($fileHahdler);
+                $fileHahdler = \myFileHelper::getFilePointer( $fileName );
+                $numberOfLines = \myFileHelper::getNumberOfLines( $fileHahdler );
             }
         }
         
-        $_SESSION['firm'] = [
+        $_SESSION[ 'firm' ] = [
             'name' => $firmName, 
             'handler' => $fileHahdler,
             'lines' => $numberOfLines,
@@ -213,13 +188,20 @@ class UploadsController extends Controller {
         $fileContent = $this->getCvsFileContent($firmName);
         $this->detachBehavior('fileProcess');
         
+        $_SESSION['firm']['handler'] = $handler;
+        
     // one row contains the data for one product and must be recorded in one record in the database	
         $linesProcessed = 0;
         foreach ($fileContent as $row) {  // take row
         // get the record with current ID and name from the DB. If it dos't exist get new record
-            $record = $this->getProduct($firmName, $row['item_id'], $row['name'] );
+            $record = $this->getProduct(
+                    $firmName, 
+                    $row['name'],
+                    ( isset( $row['item_id'] ) ? $row['item_id'] : '' )
+            );
         // assign values    
             $record->attributes = $row;
+            $record->firm = $firmName;
             $record->save();
             $linesProcessed += 1;
         }
@@ -227,7 +209,7 @@ class UploadsController extends Controller {
         return $linesProcessed;
     }
 
-    protected function getProduct( $firmName, $itemId = '', $name = '' ) {
+    protected function getProduct( $firmName, $name, $itemId = '' ) {
         
         $criteria = new CDbCriteria();
         $criteria->condition = 'firm=:firm';

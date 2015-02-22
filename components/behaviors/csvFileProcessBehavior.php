@@ -34,8 +34,12 @@ class csvFileProcessBehavior extends CBehavior {
     // take data from DB    
         $columnNames = PriceStructure::model()->findByAttributes([ 'firm' => $firm->firm_name ])->getColumnNames();
 
-    // take 100 lines from file that indicates the handler
-        $fileContent = $this->csvFileToArray($firm->column_separator, $firm->text_separator, $this->numberOfRows);
+    // take numberOfRows lines from file that indicates the handler
+        $fileContent = $this->csvFileToArray(
+            ( isset( $firm->column_separator ) ? $firm->column_separator : ''), 
+            ( isset( $firm->text_separator ) ? $firm->text_separator : '' ),
+            $this->numberOfRows
+        );
     // rename columns in $fileContent by corresponding names from $columnNames
         $fileContent = $this->fillColumnNames($fileContent, $columnNames, $firm->encoding);
     // remove unnamed columns    

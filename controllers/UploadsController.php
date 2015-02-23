@@ -48,8 +48,6 @@ class UploadsController extends Controller {
     }
 
     /**
-     *
-     * @firmName string value of firm_name will been seak
      * 
      * @return percent of file processing
      */
@@ -60,17 +58,11 @@ class UploadsController extends Controller {
                 $this->saveFirmIntoSessionVar();
             }    
 
-        // if we have got the pointer for the file
-            if ( $_SESSION['firm']['handler'] && !feof( $_SESSION['firm']['handler'] )) { 
+        // if the position of the file pointer equal or more then 0
+            if ( $_SESSION['firm']['position'] >= 0 ) { 
             
-                $linesProcessed = $this->processFile(
-                    $_SESSION['firm']['handler'], 
-                    $_SESSION['firm']['name']    
-                );
+                $linesProcessed = $this->processFile();
                 $_SESSION['firm']['counter'] += $linesProcessed;
-            }
-            else {
-                $_SESSION['firm']['counter'] = $_SESSION['firm']['lines'];
             }
             
         // if current file is finished
@@ -106,6 +98,17 @@ class UploadsController extends Controller {
         }    
         return $model;
     }
+            
+    /**
+     * Performs the AJAX validation.
+     * @param Uploads $model the model to be validated
+     */
+    protected function performAjaxValidation($model) {
+        if (isset($_POST['ajax']) && $_POST['ajax'] === 'uploads-form') {
+            echo CActiveForm::validate($model);
+            Yii::app()->end();
+        }
+    }
 
     /*
      * fills $_SESSION variable information from the GET
@@ -117,34 +120,43 @@ class UploadsController extends Controller {
         $this->clearSessionVar();
  
     // assign initial values
-        $fileHahdler = '';
-        $numberOfLines = 0;
-        $counter = 0;
+        $filePosition = -1;
+        $numberOfLines = $counter = 1;
         
     // use the filter for incoming data
-        $firmName = filter_var( $_GET['f0'], FILTER_VALIDATE_REGEXP, [ 'options' => [ 'regexp' => '/\w{3,20}/i' ] ] );
+        $firmName = filter_var( 
+                $_GET['f0'], 
+                FILTER_VALIDATE_REGEXP, 
+                array( 'options' => array( 'regexp' => '/\w{3,20}/i', ), ) 
+        );
 
-    // if there is a record in the DB for current $firmName
+    // get the current $firmName
         $fileName = $this->getFileName( $firmName );
+    // if success    
         if( $fileName ){
-        // check if the current file has been loaded into DB
+        // check if the current file has been processed
+            
+        // get the time of the current file    
             $currentFileTime = \myFileHelper::getFileTime( $fileName );
-            $firmUploaded = Uploads::model()->find('firm=:fn AND file_date=:fd',[':fn'=>$firmName, ':fd'=>$currentFileTime]);
-            if ( $firmUploaded ) {
-                $numberOfLines = 1;
-                $counter = 1;
-            } else {
-                $fileHahdler = \myFileHelper::getFilePointer( $fileName );
-                $numberOfLines = \myFileHelper::getNumberOfLines( $fileHahdler );
+        // check if there is info about the file with current name and time in the DB     
+            $firmUploaded = Uploads::model()->find(
+                    'firm=:fn AND file_date=:fd',
+                    array( ':fn'=>$firmName, ':fd'=>$currentFileTime, )
+            );    
+        // if such info isn't present 
+            if ( !$firmUploaded ) {
+                $filePosition = 0;
+                $numberOfLines = \myFileHelper::getNumberOfLines( \myFileHelper::getFilePointer($fileName) );
+                $counter = 0;
             }
         }
         
-        $_SESSION[ 'firm' ] = [
+        $_SESSION['firm'] = array(
             'name' => $firmName, 
-            'handler' => $fileHahdler,
+            'position' => $filePosition,
             'lines' => $numberOfLines,
-            'counter' => 0,
-        ];
+            'counter' => $counter,
+        );
     }
     
     /*
@@ -160,10 +172,6 @@ class UploadsController extends Controller {
      */
     protected function clearSessionVar() {
        if (isset($_SESSION['firm'])) {
-        // if file has been opened - close it    
-            if( isset($_SESSION['firm']['handler'] ) && is_resource( $_SESSION['firm']['handler']) ) {
-                fclose($_SESSION['firm']['handler']);
-            }
             foreach ($_SESSION['firm'] as $key => $value) {
                 unset($_SESSION['firm'][$key]);
             }
@@ -174,21 +182,19 @@ class UploadsController extends Controller {
      * read data from the file
      * check out if the DB contains the current data
      * write new data in the DB
-     * @param file pointer resourse $handler
-     * @param string $firmName the name of the current firm
      * @return integer number of lines been processed
      */
-    protected function processFile($handler, $firmName) {
+    protected function processFile() {
+        $firmName = $_SESSION['firm']['name'];
         
         $this->attachBehavior('fileProcess', [ 
             'class' => 'application.components.behaviors.csvFileProcessBehavior',
-            'handler' => $handler,
-            'numberOfRows' => 100, 
+            'position' => $_SESSION['firm']['position'],
+            'numberOfRows' => 1000, 
         ]);
         $fileContent = $this->getCvsFileContent($firmName);
+        $_SESSION['firm']['position'] = $this->position;
         $this->detachBehavior('fileProcess');
-        
-        $_SESSION['firm']['handler'] = $handler;
         
     // one row contains the data for one product and must be recorded in one record in the database	
         $linesProcessed = 0;
@@ -228,16 +234,4 @@ class UploadsController extends Controller {
         return $product;
     }    
         
-    
-    /**
-     * Performs the AJAX validation.
-     * @param Uploads $model the model to be validated
-     */
-    protected function performAjaxValidation($model) {
-        if (isset($_POST['ajax']) && $_POST['ajax'] === 'uploads-form') {
-            echo CActiveForm::validate($model);
-            Yii::app()->end();
-        }
-    }
-
 }

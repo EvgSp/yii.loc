@@ -12,7 +12,7 @@
  * @author evg
  */
 class csvFileProcessBehavior extends CBehavior {
-    public $handler = '';
+    public $position = 0;
     public $numberOfRows = 100;
 
 
@@ -23,7 +23,7 @@ class csvFileProcessBehavior extends CBehavior {
      * @return array
      */
     public function getCvsFileContent($firmName) {
-    // check what passed in the second paramerer
+    // check what passed in the paramerer
         if( \is_string( $firmName ) ) {
             $firm = Firm::model()->find('firm_name=:fn',array(':fn'=>$firmName));
         }
@@ -36,6 +36,7 @@ class csvFileProcessBehavior extends CBehavior {
 
     // take numberOfRows lines from file that indicates the handler
         $fileContent = $this->csvFileToArray(
+            $firm->file_name,    
             ( isset( $firm->column_separator ) ? $firm->column_separator : ''), 
             ( isset( $firm->text_separator ) ? $firm->text_separator : '' ),
             $this->numberOfRows
@@ -53,40 +54,43 @@ class csvFileProcessBehavior extends CBehavior {
      * @param file handler
      * @return array
      */
-    protected function csvFileToArray($columnSeparator, $textSeparator, $qty = 20) {
-        if (!$this->handler) {  //if the handler is empty
-            throw new CHttpException(500, 'File not found.');
-        }
-
+    protected function csvFileToArray($fileName, $columnSeparator, $textSeparator, $qty = 20) {
+        $fileContent = array();
+        
+    // get pointer for the current file
+        $handle = myFileHelper::getFilePointer($fileName);
+        if (!$handle) {  //if the handler is empty
+            return $fileContent;
+        } 
+        
+        if ( !fseek($handle, $this->position) ) {
         // read the file line by line. Treatment depends on the input parametrs
-        if ($columnSeparator) {
-            if ($textSeparator) {
-                for ($i = 0; $i < $qty; $i++) {
-                    $row = fgetcsv($this->handler, 1000, $columnSeparator, $textSeparator );
-                    if ( $row ) {
-                        $fileContent[] = $row;  // add line as new row in $fileContent array
+            if ($columnSeparator) {
+                if ($textSeparator) {
+                    for ($i = 0; $i < $qty; $i++) {
+                        $row = fgetcsv($handle, 1000, $columnSeparator, $textSeparator );
+                        if ( $row ) {
+                            $fileContent[] = $row;  // add line as new row in $fileContent array
+                        }
+                    }
+                } else {
+                    for ($i = 0; $i < $qty; $i++) {
+                        $row = fgetcsv($handle, 1000, $columnSeparator);
+                        if ( $row ) {
+                            $fileContent[] = $row;  // add line as new row in $fileContent array
+                        }
                     }
                 }
-            }
-            else {
+            } else {
                 for ($i = 0; $i < $qty; $i++) {
-                    $row = fgetcsv($this->handler, 1000, $columnSeparator);
-                    if ( $row ) {
-                        $fileContent[] = $row;  // add line as new row in $fileContent array
-                    }
+                    if (($row = fgets($handle, 1000)) !== FALSE) {
+                        $fileContent[][0] = $row;  //add line as new row in $fileContent array
+                    }    
                 }
             }
-        }
-        else {
-            for ($i = 0; $i < $qty; $i++) {
-                if (($row = fgets($this->handler, 1000)) !== FALSE)
-                    $fileContent[][0] = $row;  //add line as new row in $fileContent array
-            }
-        }
-
-        if(isset($this->owner->handler)) {
-            $this->owner->handler = $this->handler;  //save handler in global variable
-        }
+        // update the position of the pointer            
+            $this->position = ftell($handle);
+        }    
 
         return $fileContent;
     }

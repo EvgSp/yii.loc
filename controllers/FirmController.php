@@ -56,7 +56,6 @@ class FirmController extends Controller
                 $handler = myFileHelper::getFilePointer($model->file_name);                
                 $model->attachBehavior('fileProcess', [ 
                     'class' => 'application.components.behaviors.csvFileProcessBehavior',
-                    'handler' => $handler,
                     'numberOfRows' => 40,
                 ]);
 		$fileContent=$model->getCvsFileContent($model);
@@ -121,7 +120,6 @@ class FirmController extends Controller
                 $handler = myFileHelper::getFilePointer($model->file_name);                
                 $model->attachBehavior('fileProcess', [ 
                     'class' => 'application.components.behaviors.csvFileProcessBehavior',
-                    'handler' => $handler,
                     'numberOfRows' => 40,
                 ]);
                 $fileContent=$model->getCvsFileContent($model);		// get the file contents

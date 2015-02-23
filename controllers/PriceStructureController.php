@@ -54,8 +54,13 @@ class PriceStructureController extends Controller
 		
 		$firmName=$this->loadModel($id)->firm;
 		$fileId=Firm::model()->findByAttributes(array('firm_name'=>$firmName));
-		
-		$fileContent=$fileId->getCvsFileContent();
+
+                $fileId->attachBehavior('fileProcess', [ 
+                    'class' => 'application.components.behaviors.csvFileProcessBehavior',
+                    'numberOfRows' => 40,
+                ]);                
+		$fileContent=$fileId->getCvsFileContent($fileId);
+                $fileId->detachBehavior('fileProcess');
 		
 		if($fileContent) 
 			$dataProvider=new CArrayDataProvider($fileContent, array('pagination'=>false, 'keyField' => false,));
@@ -114,8 +119,13 @@ class PriceStructureController extends Controller
 
 		$firmName=$this->loadModel($id)->firm;
 		$fileId=Firm::model()->findByAttributes(array('firm_name'=>$firmName));
-		
-		$fileContent=$fileId->getCvsFileContent();
+
+                $fileId->attachBehavior('fileProcess', [ 
+                    'class' => 'application.components.behaviors.csvFileProcessBehavior',
+                    'numberOfRows' => 40,
+                ]);                
+		$fileContent=$fileId->getCvsFileContent($fileId);
+                $fileId->detachBehavior($fileId);
 				
 		if($fileContent) 
 			$dataProvider=new CArrayDataProvider($fileContent, array('pagination'=>false, 'keyField' => false,));

@@ -33,17 +33,19 @@ class myFileHelper extends CFileHelper {
      * @param file pointer resourse $handler
      * @return integer Number of lines in the file pointed to by the pointer
      */
-    public static function getNumberOfLines($f){
+    public static function getNumberOfLines($handle){
+    // save position of the handler
+        $position = ftell($handle);
     // go to the start of file    
-        rewind($f);
+        rewind($handle);
         
         $lines = 0;
 
-        while (!feof($f)) {
-            $lines += substr_count(fread($f, 8192), "\n");
+        while (!feof($handle)) {
+            $lines += substr_count(fread($handle, 8192), "\n");
         }
-        
-        rewind($f);
+    // on the safe side return counter to it's initial value   
+        fseek($handle, $position);
         
         return $lines;        
     }    

@@ -211,6 +211,11 @@ class UploadsController extends Controller {
         // prepare price parameter, remove whitespace and replace possible delimiters by "."
             $row['price'] = str_replace(" " , "", $row['price']);
             $row['price'] = str_replace(array(",", "-"), ".", $row['price']);
+        // if price = 0, it isn't line of a product
+            if( $row['price'] == 0 ) {
+                $linesProcessed += 1;
+                continue;                
+            }
         
         // get the record with current ID and name from the DB. If it dos't exist make new record
             $record = $this->getProduct(
@@ -231,6 +236,7 @@ class UploadsController extends Controller {
                 }
             // if there are not difference between base and file - continue loop     
                 if( $flag == 0 ) {
+                    $linesProcessed += 1;
                     continue;
                 }
             } else {
@@ -252,13 +258,17 @@ class UploadsController extends Controller {
         
         $criteria = new CDbCriteria();
         $criteria->condition = 'firm=:firm';
+        $criteria->params = array(':firm'=>$firmName);
+        
         if( $itemId ) {
             $criteria->addCondition('item_id=:itemId');
+            $criteria->params[':itemId'] = $itemId;
         }
         if( $name ) {
             $criteria->addCondition('name=:name');
+            $criteria->params[':name'] = $name;
         }
-        $criteria->params=[':firm'=>$firmName, ':itemId'=>$itemId, ':name'=>$name ];
+//        $criteria->params=[':firm'=>$firmName, ':itemId'=>$itemId, ':name'=>$name ];
     // try to find product    
         
         $product = ProductsData::model()->find($criteria);

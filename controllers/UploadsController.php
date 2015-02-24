@@ -48,8 +48,10 @@ class UploadsController extends Controller {
     }
 
     /**
+     * process ajax request, manage loading data from prices to the DB
+     * data between requests are saved in the superglobal variable $_SESSION
      * 
-     * @return percent of file processing
+     * @return josn string with the firm name and the percent of current file processing
      */
     public function actionFileProcesing() {
         if (Yii::app()->request->isAjaxRequest) {
@@ -68,13 +70,15 @@ class UploadsController extends Controller {
         // if current file is finished
             if ($_SESSION['firm']['counter'] == $_SESSION['firm']['lines']) {
                 $_SESSION['firm']['counter'] += 1;
-            // save in the DB parameters of the current file     
-                $model=new Uploads;
-                $model->firm = $_SESSION['firm']['name'];
-                $model->rows = $_SESSION['firm']['lines'];
-                $model->size = myFileHelper::getFileSize( $this->getFileName( $_SESSION['firm']['name'] ) );
-                $model->file_date = myFileHelper::getFileTime( $this->getFileName( $_SESSION['firm']['name'] ) );
-                $model->save();
+            // if number of lines in the file more then 1, save info about loading parameters in the DB
+                if ( $_SESSION['firm']['lines'] > 1 ) {
+                    $model=new Uploads;
+                    $model->firm = $_SESSION['firm']['name'];
+                    $model->rows = $_SESSION['firm']['lines'];
+                    $model->size = myFileHelper::getFileSize( $this->getFileName( $_SESSION['firm']['name'] ) );
+                    $model->file_date = myFileHelper::getFileTime( $this->getFileName( $_SESSION['firm']['name'] ) );
+                    $model->save();
+                }
             }
  
             echo json_encode(array(
@@ -111,9 +115,13 @@ class UploadsController extends Controller {
     }
 
     /*
-     * fills $_SESSION variable information from the GET
-     * for each firm from GET fill $_SESSION['firm'][$i]['name'] by name of firm
-     * and put in $_SESSION['firm'][$i]['counter'] initial value for counter - "0"
+     * clear $_SESSION variable and fill it by information from the GET
+     * $_SESSION['firm'][$i]['name'] - name of firm
+     * $_SESSION['firm'][$i]['position'] - position of the file pointer. Initial value is "0". 
+     *      File opening error coding by "-1" 
+     * $_SESSION['firm'][$i]['lines'] - number of lines in the file
+     * $_SESSION['firm'][$i]['counter'] - number of lines which was processed. Initial value is "0"
+     *      or "1" if error happened
      */
     protected function saveFirmIntoSessionVar() {
     // delete old information in $_SESSION['firm']
@@ -134,17 +142,15 @@ class UploadsController extends Controller {
         $fileName = $this->getFileName( $firmName );
     // if success    
         if( $fileName ){
-        // check if the current file has been processed
-            
-        // get the time of the current file    
-            $currentFileTime = \myFileHelper::getFileTime( $fileName );
         // check if there is info about the file with current name and time in the DB     
+            $currentFileTime = \myFileHelper::getFileTime( $fileName );
             $firmUploaded = Uploads::model()->find(
                     'firm=:fn AND file_date=:fd',
                     array( ':fn'=>$firmName, ':fd'=>$currentFileTime, )
             );    
         // if such info isn't present 
             if ( !$firmUploaded ) {
+            // change initial values    
                 $filePosition = 0;
                 $numberOfLines = \myFileHelper::getNumberOfLines( \myFileHelper::getFilePointer($fileName) );
                 $counter = 0;
@@ -160,6 +166,8 @@ class UploadsController extends Controller {
     }
     
     /*
+     * return name of the file for firm which is passed by argument
+     * 
      * @param string name of current firm
      * @return string name of the price file for current firm 
      */
@@ -168,7 +176,7 @@ class UploadsController extends Controller {
     }
 
    /*
-     * delete all elemenrs into $_SESSION[firm]
+     * delete all elements into $_SESSION[firm] array
      */
     protected function clearSessionVar() {
        if (isset($_SESSION['firm'])) {
@@ -179,9 +187,10 @@ class UploadsController extends Controller {
     }
 
     /**
-     * read data from the file
+     * read data from the file of the current firm. The name of the firm is taken from $_SESSION['firm']['name']
      * check out if the DB contains the current data
      * write new data in the DB
+     * 
      * @return integer number of lines been processed
      */
     protected function processFile() {
@@ -196,17 +205,41 @@ class UploadsController extends Controller {
         $_SESSION['firm']['position'] = $this->position;
         $this->detachBehavior('fileProcess');
         
-    // one row contains the data for one product and must be recorded in one record in the database	
+    // one row contains the data for one product and must be recorded in one record in the database
         $linesProcessed = 0;
         foreach ($fileContent as $row) {  // take row
-        // get the record with current ID and name from the DB. If it dos't exist get new record
+        // prepare price parameter, remove whitespace and replace possible delimiters by "."
+            $row['price'] = str_replace(" " , "", $row['price']);
+            $row['price'] = str_replace(array(",", "-"), ".", $row['price']);
+        
+        // get the record with current ID and name from the DB. If it dos't exist make new record
             $record = $this->getProduct(
                     $firmName, 
                     $row['name'],
                     ( isset( $row['item_id'] ) ? $row['item_id'] : '' )
             );
+        // if record for current product exist    
+            if( $record ) {
+            // compare values from DB and values from file
+                $flag = 0;
+                foreach ($row as $key => $value) {
+                    if($record->$key != $value ) {
+                    // if have find difference
+                        $flag = 1;
+                        break;
+                    }
+                }
+            // if there are not difference between base and file - continue loop     
+                if( $flag == 0 ) {
+                    continue;
+                }
+            } else {
+                $record = new ProductsData;
+            }
+
         // assign values    
             $record->attributes = $row;
+            $record->change_date = new CDbExpression('NOW()');
             $record->firm = $firmName;
             $record->save();
             $linesProcessed += 1;
@@ -219,18 +252,16 @@ class UploadsController extends Controller {
         
         $criteria = new CDbCriteria();
         $criteria->condition = 'firm=:firm';
-        if( isset( $itemId )) {
+        if( $itemId ) {
             $criteria->addCondition('item_id=:itemId');
         }
-        if( isset( $name )) {
+        if( $name ) {
             $criteria->addCondition('name=:name');
         }
         $criteria->params=[':firm'=>$firmName, ':itemId'=>$itemId, ':name'=>$name ];
-    // if product with sach ID and name dos't exist    
-        if( !$product = ProductsData::model()->find($criteria) ) {
-        // make new item    
-            $product = new ProductsData;
-        }
+    // try to find product    
+        
+        $product = ProductsData::model()->find($criteria);
         return $product;
     }    
         

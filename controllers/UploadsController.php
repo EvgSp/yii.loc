@@ -204,75 +204,84 @@ class UploadsController extends Controller {
         $fileContent = $this->getCvsFileContent($firmName);
         $_SESSION['firm']['position'] = $this->position;
         $this->detachBehavior('fileProcess');
+       
+        $linesProcessed = $this->saveFileContentInDB($firmName, $fileContent);
+        
+        return $linesProcessed;
+    }
+    
+    protected function saveFileContentInDB(&$firmName, &$fileContent) {
+        $linesProcessed = 0;
+    //    $connection = Yii::app()->db;
+    //    $transaction =$connection->beginTransaction();
         
     // one row contains the data for one product and must be recorded in one record in the database
-        $linesProcessed = 0;
         foreach ($fileContent as $row) {  // take row
+            $linesProcessed += 1;
+
         // prepare price parameter, remove whitespace and replace possible delimiters by "."
             $row['price'] = str_replace(" " , "", $row['price']);
             $row['price'] = str_replace(array(",", "-"), ".", $row['price']);
         // if price = 0, it isn't line of a product
             if( $row['price'] == 0 ) {
-                $linesProcessed += 1;
                 continue;                
             }
         
         // get the record with current ID and name from the DB. If it dos't exist make new record
-            $record = $this->getProduct(
-                    $firmName, 
-                    $row['name'],
-                    ( isset( $row['item_id'] ) ? $row['item_id'] : '' )
-            );
-        // if record for current product exist    
-            if( $record ) {
-            // compare values from DB and values from file
-                $flag = 0;
-                foreach ($row as $key => $value) {
-                    if($record->$key != $value ) {
-                    // if have find difference
-                        $flag = 1;
-                        break;
-                    }
-                }
-            // if there are not difference between base and file - continue loop     
-                if( $flag == 0 ) {
-                    $linesProcessed += 1;
-                    continue;
-                }
-            } else {
-                $record = new ProductsData;
-            }
+            $record = $this->getProduct($firmName, $row);
 
-        // assign values    
-            $record->attributes = $row;
-            $record->change_date = new CDbExpression('NOW()');
-            $record->firm = $firmName;
-            $record->save();
-            $linesProcessed += 1;
+        // assign values
+            if( $record ) {
+                $record->attributes = $row;
+                $record->change_date = new CDbExpression('NOW()');
+                $record->firm = $firmName;
+                $record->save();
+            }
         }
         
+    //    $transaction->commit();
+        
         return $linesProcessed;
-    }
+    }    
 
-    protected function getProduct( $firmName, $name, $itemId = '' ) {
+    protected function getProduct( &$firmName, &$row ) {
         
         $criteria = new CDbCriteria();
         $criteria->condition = 'firm=:firm';
         $criteria->params = array(':firm'=>$firmName);
         
+        $itemId = ( isset($row['itemId']) ? $row['itemId'] : '' );
         if( $itemId ) {
             $criteria->addCondition('item_id=:itemId');
             $criteria->params[':itemId'] = $itemId;
         }
-        if( $name ) {
+        if( $row['name'] ) {
             $criteria->addCondition('name=:name');
-            $criteria->params[':name'] = $name;
+            $criteria->params[':name'] = $row['name'];
         }
-//        $criteria->params=[':firm'=>$firmName, ':itemId'=>$itemId, ':name'=>$name ];
-    // try to find product    
+
+        $record = ProductsData::model()->find($criteria);
+
+        // if record for current product exist    
+        if( $record ) {
+        // compare values from DB and values from file
+            $flag = 0;
+            foreach ($row as $key => $value) {
+                if($record->$key != $value ) {
+                // if have find difference
+                    $flag = 1;
+                    break;
+                }
+            }
+        // if there are not difference between base and file - continue loop     
+            if( $flag == 0 ) {
+                $record = '';
+            }
+        } else {
+            $record = new ProductsData;
+        }        
         
-        $product = ProductsData::model()->find($criteria);
-        return $product;
-    }    
-        
+        return $record;
+    }
+          
 }

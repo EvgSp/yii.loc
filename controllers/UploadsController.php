@@ -250,11 +250,15 @@ class UploadsController extends Controller {
         $criteria->condition = 'firm=:firm';
         $criteria->params = array(':firm'=>$firmName);
         
-        $itemId = ( isset($row['itemId']) ? $row['itemId'] : '' );
+        $itemId = isset($row['item_id']) ? $row['item_id'] : '' ;
+        
         if( $itemId ) {
             $criteria->addCondition('item_id=:itemId');
             $criteria->params[':itemId'] = $itemId;
+        } else {
+            $criteria->addCondition('item_id IS NULL');
         }
+
         if( $row['name'] ) {
             $criteria->addCondition('name=:name');
             $criteria->params[':name'] = $row['name'];
